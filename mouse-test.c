@@ -1,3 +1,8 @@
+/*
+ * mouse-test -- monitor mouse click events
+ * Copyright (c) 2015 Holger Langenau (see also: LICENSE)
+ * 
+ */
 #include <stdio.h>
 #include <glib.h>
 #include <gtk/gtk.h>
