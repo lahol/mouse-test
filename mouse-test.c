@@ -5,15 +5,41 @@
 GtkTextBuffer *text_buffer = NULL;
 GtkAdjustment *vadjustment = NULL;
 
+struct {
+    gboolean insert_empty_line;
+    guint32 idle_interval;
+    guint source_id;
+} mt_idle_status;
+
+gboolean idle_proc(gpointer data)
+{
+    GtkTextIter tend;
+    gtk_text_buffer_get_iter_at_offset(text_buffer, &tend, -1);
+    gtk_text_buffer_insert(text_buffer, &tend, "–\n", -1);
+
+    mt_idle_status.source_id = 0;
+    return FALSE;
+}
+
+void mt_start_idle(void)
+{
+    if (mt_idle_status.source_id > 0) {
+        g_source_remove(mt_idle_status.source_id);
+    }
+    if (mt_idle_status.insert_empty_line) {
+        mt_idle_status.source_id = g_timeout_add(mt_idle_status.idle_interval, idle_proc, NULL);
+    }
+}
+
 gboolean mt_window_button_event(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
     GString *msg = g_string_sized_new(256);
     GtkTextIter tend;
-    static guint32 last_event = 0;
+/*    static guint32 last_event = 0;
 
     if (last_event > 0 && event->time - last_event >= 1000)
         g_string_append_c(msg, '\n');
-    last_event = event->time;
+    last_event = event->time;*/
 
     g_string_append_printf(msg, "%" G_GUINT32_FORMAT ": ", event->time);
     switch (event->type) {
@@ -46,12 +72,11 @@ gboolean mt_window_button_event(GtkWidget *widget, GdkEventButton *event, gpoint
 
     gtk_text_buffer_get_iter_at_offset(text_buffer, &tend, -1);
     gtk_text_buffer_insert(text_buffer, &tend, str, -1);
-
-    fputs(str, stdout);
-    fflush(stdout);
     g_free(str);
 
-    gtk_adjustment_set_value(vadjustment, gtk_adjustment_get_upper(vadjustment)); 
+    gtk_adjustment_set_value(vadjustment, gtk_adjustment_get_upper(vadjustment));
+
+    mt_start_idle();
 
     return TRUE;
 }
@@ -74,6 +99,9 @@ int main(int argc, char **argv)
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     if (win == NULL)
         return 1;
+
+    mt_idle_status.insert_empty_line = TRUE;
+    mt_idle_status.idle_interval = 800;
 
     GtkWidget *event_box = gtk_event_box_new();
     GtkWidget *frame = gtk_frame_new("Click area");
