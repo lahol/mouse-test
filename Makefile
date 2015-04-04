@@ -3,6 +3,7 @@ LD := $(CROSS)ld
 AR := $(CROSS)ar
 PKG_CONFIG := $(CROSS)pkg-config
 
+PREFIX=/usr
 
 MT_CFLAGS += -Wall -g -I$(CROSSENV)/usr/include `$(PKG_CONFIG) --cflags glib-2.0 gtk+-2.0` 
 MT_LIBS += `$(PKG_CONFIG) --libs glib-2.0 gtk+-2.0`
@@ -28,6 +29,9 @@ $(TARGET): $(mt_OBJ)
 
 %.o: %.c $(mt_HEADERS)
 	$(CC) $(CFLAGS) $(MT_CFLAGS) -c -o $@ $<
+
+install: $(TARGET)
+	install $(TARGET) $(PREFIX)/bin
 
 clean:
 	rm -f $(TARGET) $(mt_OBJ)
