@@ -9,8 +9,13 @@ gboolean mt_window_button_event(GtkWidget *widget, GdkEventButton *event, gpoint
 {
     GString *msg = g_string_sized_new(256);
     GtkTextIter tend;
+    static guint32 last_event = 0;
 
-    g_string_printf(msg, "%" G_GUINT32_FORMAT ": ", event->time);
+    if (last_event > 0 && event->time - last_event >= 1000)
+        g_string_append_c(msg, '\n');
+    last_event = event->time;
+
+    g_string_append_printf(msg, "%" G_GUINT32_FORMAT ": ", event->time);
     switch (event->type) {
         case GDK_BUTTON_PRESS:
             g_string_append_printf(msg, "press ");
@@ -72,6 +77,7 @@ int main(int argc, char **argv)
 
     GtkWidget *event_box = gtk_event_box_new();
     GtkWidget *frame = gtk_frame_new("Click area");
+    gtk_widget_set_size_request(frame, 400, 200);
     gtk_container_add(GTK_CONTAINER(frame), event_box);
 
     GtkWidget *text_view = gtk_text_view_new();
@@ -82,13 +88,13 @@ int main(int argc, char **argv)
     gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
     text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 
-    GtkWidget *vbox = gtk_vbox_new(TRUE, 3);
-    gtk_box_pack_start(GTK_BOX(vbox), frame, TRUE, TRUE, 2);
-    gtk_box_pack_start(GTK_BOX(vbox), scrolled_win, TRUE, TRUE, 2);
+    GtkWidget *vbox = gtk_vpaned_new();
+    gtk_paned_pack1(GTK_PANED(vbox), frame, FALSE, FALSE);
+    gtk_paned_pack2(GTK_PANED(vbox), scrolled_win, TRUE, FALSE);
     gtk_container_add(GTK_CONTAINER(win), vbox);
     gtk_widget_show_all(vbox);
 
-    gtk_window_set_default_size(GTK_WINDOW(win), 400, 300);
+    gtk_window_set_default_size(GTK_WINDOW(win), 400, 600);
     gtk_widget_add_events(GTK_WIDGET(event_box),
             GDK_BUTTON_PRESS_MASK |
             GDK_BUTTON_RELEASE_MASK |
