@@ -31,6 +31,16 @@ void mt_start_idle(void)
     }
 }
 
+void mt_idle_interval_changed(GtkSpinButton *spin_button, gpointer data)
+{
+    mt_idle_status.idle_interval = (guint32)gtk_spin_button_get_value_as_int(spin_button);
+}
+
+void mt_idle_toggle_insert_empty_line(GtkToggleButton *toggle_button, gpointer data)
+{
+    mt_idle_status.insert_empty_line = gtk_toggle_button_get_active(toggle_button);
+}
+
 gboolean mt_window_button_event(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
     GString *msg = g_string_sized_new(256);
@@ -103,10 +113,27 @@ int main(int argc, char **argv)
     mt_idle_status.insert_empty_line = TRUE;
     mt_idle_status.idle_interval = 800;
 
+    GtkWidget *vbox = gtk_vbox_new(FALSE, 3);
+
     GtkWidget *event_box = gtk_event_box_new();
     GtkWidget *frame = gtk_frame_new("Click area");
     gtk_widget_set_size_request(frame, 400, 200);
     gtk_container_add(GTK_CONTAINER(frame), event_box);
+    gtk_box_pack_start(GTK_BOX(vbox), frame, FALSE, FALSE, 2);
+
+    GtkWidget *hbox = gtk_hbox_new(FALSE, 3);
+    GtkWidget *check_box = gtk_check_button_new_with_label("Insert empty line after milliseconds:");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_box), mt_idle_status.insert_empty_line);
+    g_signal_connect(G_OBJECT(check_box), "toggled", G_CALLBACK(mt_idle_toggle_insert_empty_line), NULL);
+
+    gtk_box_pack_start(GTK_BOX(hbox), check_box, FALSE, FALSE, 2);
+
+    GtkWidget *spin_button = gtk_spin_button_new_with_range(0, 10000, 100);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button), mt_idle_status.idle_interval);
+    g_signal_connect(G_OBJECT(spin_button), "value-changed", G_CALLBACK(mt_idle_interval_changed), NULL);
+    gtk_box_pack_start(GTK_BOX(hbox), spin_button, FALSE, FALSE, 2);
+
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 2);
 
     GtkWidget *text_view = gtk_text_view_new();
     GtkWidget *scrolled_win = gtk_scrolled_window_new(NULL, NULL);
@@ -116,11 +143,11 @@ int main(int argc, char **argv)
     gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
     text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 
-    GtkWidget *vbox = gtk_vpaned_new();
-    gtk_paned_pack1(GTK_PANED(vbox), frame, FALSE, FALSE);
-    gtk_paned_pack2(GTK_PANED(vbox), scrolled_win, TRUE, FALSE);
-    gtk_container_add(GTK_CONTAINER(win), vbox);
-    gtk_widget_show_all(vbox);
+    GtkWidget *vpane = gtk_vpaned_new();
+    gtk_paned_pack1(GTK_PANED(vpane), vbox, FALSE, FALSE);
+    gtk_paned_pack2(GTK_PANED(vpane), scrolled_win, TRUE, FALSE);
+    gtk_container_add(GTK_CONTAINER(win), vpane);
+    gtk_widget_show_all(vpane);
 
     gtk_window_set_default_size(GTK_WINDOW(win), 400, 600);
     gtk_widget_add_events(GTK_WIDGET(event_box),
